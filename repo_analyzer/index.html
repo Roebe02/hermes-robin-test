@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 GitHub Repo Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 600px;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .divider {
+            text-align: center;
+            color: #999;
+            margin: 20px 0;
+            font-size: 12px;
+        }
+        
+        .file-upload {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f9f9f9;
+        }
+        
+        .file-upload:hover {
+            background: #f0f0f0;
+        }
+        
+        .file-upload input {
+            display: none;
+        }
+        
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 20px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 3px solid #f0f0f0;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .results {
+            display: none;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+        
+        .results.show {
+            display: block;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .languages {
+            margin-top: 20px;
+        }
+        
+        .language-item {
+            margin-bottom: 12px;
+        }
+        
+        .language-name {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+        
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 GitHub Repo Analyzer</h1>
+        <p class="subtitle">Analyzeriere Repos und sieh Statistiken</p>
+        
+        <form id="analyzeForm">
+            <div class="form-group">
+                <label for="repoUrl">GitHub Repo URL</label>
+                <input 
+                    type="text" 
+                    id="repoUrl" 
+                    placeholder="https://github.com/user/repo.git"
+                >
+            </div>
+            
+            <div class="divider">oder</div>
+            
+            <div class="form-group">
+                <label>ZIP Datei hochladen</label>
+                <div class="file-upload" onclick="document.getElementById('repoFile').click()">
+                    <span>📁 Klick zum hochladen oder Datei ziehen</span>
+                    <input type="file" id="repoFile" accept=".zip">
+                </div>
+            </div>
+            
+            <button type="submit">📊 Analysieren</button>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #666;">Analysiere...</p>
+        </div>
+        
+        <div class="results" id="results">
+            <h2 style="margin-bottom: 20px; color: #333;">📊 Ergebnisse</h2>
+            
+            <div class="stats-grid" id="statsGrid"></div>
+            
+            <div class="languages" id="languagesContainer"></div>
+            
+            <div id="errorDiv" class="error" style="display: none;"></div>
+        </div>
+    </div>
+    
+    <script>
+        const form = document.getElementById('analyzeForm');
+        const repoUrl = document.getElementById('repoUrl');
+        const repoFile = document.getElementById('repoFile');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const statsGrid = document.getElementById('statsGrid');
+        const languagesContainer = document.getElementById('languagesContainer');
+        const errorDiv = document.getElementById('errorDiv');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!repoUrl.value && !repoFile.files[0]) {
+                showError('Bitte URL oder Datei eingeben');
+                return;
+            }
+            
+            loading.style.display = 'block';
+            results.classList.remove('show');
+            errorDiv.style.display = 'none';
+            
+            try {
+                let data;
+                
+                if (repoUrl.value) {
+                    const response = await fetch('/api/analyze?url=' + encodeURIComponent(repoUrl.value), {
+                        method: 'POST'
+                    });
+                    data = await response.json();
+                } else {
+                    const formData = new FormData();
+                    formData.append('file', repoFile.files[0]);
+                    
+                    const response = await fetch('/api/analyze', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    data = await response.json();
+                }
+                
+                if (data.success) {
+                    displayResults(data.stats);
+                } else {
+                    showError(data.detail || 'Fehler bei Analyse');
+                }
+            } catch (error) {
+                showError('API Fehler: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+        
+        function displayResults(stats) {
+            // Stats cards
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${stats.total_files}</div>
+                    <div class="stat-label">Dateien</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.total_lines.toLocaleString()}</div>
+                    <div class="stat-label">Zeilen Code</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.commits}</div>
+                    <div class="stat-label">Commits</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.contributors}</div>
+                    <div class="stat-label">Contributor</div>
+                </div>
+            `;
+            
+            // Languages
+            const totalLines = stats.total_lines || 1;
+            let langHtml = '<h3 style="margin-bottom: 15px; color: #333;">📝 Sprachen</h3>';
+            
+            Object.entries(stats.languages).forEach(([ext, lines]) => {
+                const percent = (lines / totalLines * 100).toFixed(1);
+                langHtml += `
+                    <div class="language-item">
+                        <div class="language-name">
+                            <span>${ext}</span>
+                            <span>${percent}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            languagesContainer.innerHTML = langHtml;
+            results.classList.add('show');
+        }
+        
+        function showError(message) {
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.style.display = 'block';
+            results.classList.remove('show');
+        }
+    </script>
+</body>
+</html>
